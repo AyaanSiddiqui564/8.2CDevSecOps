@@ -59,14 +59,22 @@ pipeline {
         }
     }
 
+
     post {
         always {
-            emailext(
-                to: "${env.NOTIFY_EMAIL}",
-                subject: "Build Completed: ${currentBuild.currentResult} - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: "The build has finished. Check console and attached logs if needed.",
-                attachLog: true
-            )
+            script {
+                // Use try/catch to prevent Jenkins from skipping the email
+                try {
+                    emailext(
+                        to: "${env.NOTIFY_EMAIL}",
+                        subject: "Build Completed: ${currentBuild.currentResult} - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                        body: "The build has finished. Check console and attached logs if needed.",
+                        attachLog: true
+                    )
+                } catch (err) {
+                    echo "Failed to send build email: ${err}"
+                }
+            }
         }
     }
 }
