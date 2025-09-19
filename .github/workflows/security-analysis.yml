@@ -7,29 +7,13 @@ on:
     branches: [ main ]
 
 jobs:
-  codeql-analysis:
-    name: CodeQL Analysis
+  security-scan:
+    name: CodeQL + Snyk Security Scan
     runs-on: ubuntu-latest
 
     permissions:
       contents: read
       security-events: write  # Needed for SARIF upload
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: javascript  # Add other languages if needed
-
-      - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@v3
-
-  snyk-scan:
-    name: Snyk Security Scan
-    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
@@ -43,13 +27,25 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Run Snyk test
+      # Run Snyk scan and save SARIF
+      - name: Run Snyk Test
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
           snyk test --json > snyk-sarif.json
           echo "Snyk scan completed"
 
+      # Initialize CodeQL
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript  # Add other languages if needed
+
+      # Perform CodeQL analysis
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+      # Upload combined SARIF (Snyk + CodeQL)
       - name: Upload Snyk SARIF
         if: success() && always()
         uses: github/codeql-action/upload-sarif@v3
